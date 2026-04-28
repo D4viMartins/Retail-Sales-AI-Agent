@@ -1,0 +1,36 @@
+﻿services:
+  cli:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data/raw/dataset.csv:/app/data/raw/dataset.csv:ro
+    stdin_open: true
+    tty: true
+    profiles: ["cli"]
+
+  api:
+    build: .
+    command: ["python", "main.py", "--api"]
+    env_file: .env
+    volumes:
+      - ./data/raw/dataset.csv:/app/data/raw/dataset.csv:ro
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  streamlit:
+    build: .
+    command: ["python", "main.py", "--streamlit"]
+    env_file: .env
+    volumes:
+      - ./data/raw/dataset.csv:/app/data/raw/dataset.csv:ro
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    depends_on:
+      - api
+    restart: unless-stopped
